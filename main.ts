@@ -116,13 +116,57 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 	getClickedNode(evt: MouseEvent, canvasView: CanvasView): CanvasNode | null {
 		try {
 			const target = evt.target as HTMLElement;
+			console.log('Canvas Auto Child Selector: Click target:', {
+				tagName: target.tagName,
+				className: target.className,
+				id: target.id
+			});
 
-			// Find the canvas node element
-			const nodeElement = target.closest('.canvas-node');
-			console.log('Canvas Auto Child Selector: Node element:', nodeElement);
+			// First, check if there's already a selection in the canvas
+			// The canvas might have already identified the node
+			const currentSelection = canvasView.canvas.selection;
+			console.log('Canvas Auto Child Selector: Current selection size:', currentSelection?.size);
+
+			// Try multiple selectors for canvas nodes
+			const selectors = [
+				'.canvas-node',
+				'[data-node-id]',
+				'.canvas-node-container',
+				'.canvas-card'
+			];
+
+			let nodeElement: HTMLElement | null = null;
+			for (const selector of selectors) {
+				nodeElement = target.closest(selector) as HTMLElement;
+				if (nodeElement) {
+					console.log('Canvas Auto Child Selector: Found node element with selector:', selector);
+					break;
+				}
+			}
+
+			console.log('Canvas Auto Child Selector: Node element found:', !!nodeElement);
 
 			if (!nodeElement) {
-				console.log('Canvas Auto Child Selector: No .canvas-node element found');
+				console.log('Canvas Auto Child Selector: No node element found, checking all nodes for element match');
+
+				// Try to find node by checking all nodes' elements
+				for (const [id, node] of canvasView.canvas.nodes) {
+					const nodeObj = node as any;
+					console.log('Canvas Auto Child Selector: Checking node:', id, {
+						hasNodeEl: !!nodeObj.nodeEl,
+						hasContainerEl: !!nodeObj.containerEl,
+						hasElement: !!nodeObj.element
+					});
+
+					// Check if any of the node's elements contain or match the target
+					if (nodeObj.nodeEl?.contains(target) ||
+					    nodeObj.containerEl?.contains(target) ||
+					    nodeObj.element?.contains(target)) {
+						console.log('Canvas Auto Child Selector: Found node by element contains:', id);
+						return node;
+					}
+				}
+
 				return null;
 			}
 
@@ -132,7 +176,8 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 				hasNode: !!el.node,
 				dataset: el.dataset,
 				id: el.id,
-				className: el.className
+				className: el.className,
+				allAttributes: Array.from(nodeElement.attributes || []).map((attr: any) => `${attr.name}=${attr.value}`)
 			});
 
 			if (el.node) {
@@ -147,7 +192,7 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 			               el.getAttribute('data-node-id') ||
 			               el.id;
 
-			console.log('Canvas Auto Child Selector: Node ID:', nodeId);
+			console.log('Canvas Auto Child Selector: Node ID from attributes:', nodeId);
 			console.log('Canvas Auto Child Selector: Available nodes:', Array.from(canvasView.canvas.nodes.keys()));
 
 			if (nodeId && canvasView.canvas.nodes.has(nodeId)) {
@@ -158,7 +203,11 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 			// Alternative: Search through all nodes to find matching element
 			for (const [id, node] of canvasView.canvas.nodes) {
 				const nodeObj = node as any;
-				if (nodeObj.nodeEl === nodeElement || nodeObj.containerEl === nodeElement) {
+				if (nodeObj.nodeEl === nodeElement ||
+				    nodeObj.containerEl === nodeElement ||
+				    nodeObj.element === nodeElement ||
+				    nodeObj.nodeEl?.contains(nodeElement) ||
+				    nodeObj.containerEl?.contains(nodeElement)) {
 					console.log('Canvas Auto Child Selector: Found node by element match:', id);
 					return node;
 				}
