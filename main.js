@@ -28,12 +28,17 @@ __export(main_exports, {
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
+var DEFAULT_SETTINGS = {
+  modifierKey: "ctrl"
+};
 var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
   async onload() {
     console.log("Loading Canvas Auto Child Selector plugin");
+    await this.loadSettings();
+    this.addSettingTab(new CanvasAutoChildSelectorSettingTab(this.app, this));
     this.registerDomEvent(document, "click", (evt) => {
       try {
-        const modifierPressed = evt.ctrlKey || evt.metaKey;
+        const modifierPressed = this.isModifierPressed(evt);
         if (!modifierPressed) {
           return;
         }
@@ -125,7 +130,46 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
       console.error("Error finding descendants:", error);
     }
   }
+  isModifierPressed(evt) {
+    switch (this.settings.modifierKey) {
+      case "ctrl":
+        return evt.ctrlKey || evt.metaKey;
+      case "alt":
+        return evt.altKey;
+      case "shift":
+        return evt.shiftKey;
+      case "none":
+        return true;
+      default:
+        return evt.ctrlKey || evt.metaKey;
+    }
+  }
+  async loadSettings() {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  }
+  async saveSettings() {
+    await this.saveData(this.settings);
+  }
   onunload() {
     console.log("Unloading Canvas Auto Child Selector plugin");
+  }
+};
+var CanvasAutoChildSelectorSettingTab = class extends import_obsidian.PluginSettingTab {
+  constructor(app, plugin) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
+  display() {
+    const { containerEl } = this;
+    containerEl.empty();
+    containerEl.createEl("h2", { text: "Canvas Auto Child Selector Settings" });
+    new import_obsidian.Setting(containerEl).setName("Modifier Key").setDesc("Choose which modifier key to hold while clicking a parent node to select all children").addDropdown((dropdown) => dropdown.addOption("ctrl", "Ctrl/Cmd (Default)").addOption("alt", "Alt/Option").addOption("shift", "Shift").addOption("none", "No Modifier (Always Active)").setValue(this.plugin.settings.modifierKey).onChange(async (value) => {
+      this.plugin.settings.modifierKey = value;
+      await this.plugin.saveSettings();
+    }));
+    containerEl.createEl("p", {
+      text: "How to use: Hold the configured modifier key and click on any parent node in Canvas view. All child nodes and connecting edges will be selected automatically.",
+      cls: "setting-item-description"
+    });
   }
 };
