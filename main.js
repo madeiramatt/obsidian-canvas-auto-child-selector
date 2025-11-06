@@ -39,19 +39,30 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
     this.registerDomEvent(document, "click", (evt) => {
       try {
         const modifierPressed = this.isModifierPressed(evt);
+        console.log("Canvas Auto Child Selector: Click detected", {
+          modifierPressed,
+          modifierKey: this.settings.modifierKey,
+          ctrlKey: evt.ctrlKey,
+          metaKey: evt.metaKey,
+          altKey: evt.altKey,
+          shiftKey: evt.shiftKey
+        });
         if (!modifierPressed) {
           return;
         }
         const canvasView = this.getActiveCanvasView();
+        console.log("Canvas Auto Child Selector: Canvas view found:", !!canvasView);
         if (!canvasView) {
           return;
         }
         const clickedNode = this.getClickedNode(evt, canvasView);
+        console.log("Canvas Auto Child Selector: Clicked node found:", !!clickedNode, clickedNode == null ? void 0 : clickedNode.id);
         if (!clickedNode) {
           return;
         }
         evt.preventDefault();
         evt.stopPropagation();
+        console.log("Canvas Auto Child Selector: Selecting descendants for node:", clickedNode.id);
         this.selectNodeWithDescendants(clickedNode, canvasView.canvas);
       } catch (error) {
         console.error("Canvas Auto Child Selector error:", error);

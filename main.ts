@@ -51,18 +51,29 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 				// Check if the configured modifier key is pressed
 				const modifierPressed = this.isModifierPressed(evt);
 
+				console.log('Canvas Auto Child Selector: Click detected', {
+					modifierPressed,
+					modifierKey: this.settings.modifierKey,
+					ctrlKey: evt.ctrlKey,
+					metaKey: evt.metaKey,
+					altKey: evt.altKey,
+					shiftKey: evt.shiftKey
+				});
+
 				if (!modifierPressed) {
 					return;
 				}
 
 				// Get the active canvas view
 				const canvasView = this.getActiveCanvasView();
+				console.log('Canvas Auto Child Selector: Canvas view found:', !!canvasView);
 				if (!canvasView) {
 					return;
 				}
 
 				// Find the clicked node
 				const clickedNode = this.getClickedNode(evt, canvasView);
+				console.log('Canvas Auto Child Selector: Clicked node found:', !!clickedNode, clickedNode?.id);
 				if (!clickedNode) {
 					return;
 				}
@@ -70,6 +81,8 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 				// Prevent default selection behavior
 				evt.preventDefault();
 				evt.stopPropagation();
+
+				console.log('Canvas Auto Child Selector: Selecting descendants for node:', clickedNode.id);
 
 				// Select the parent and all its descendants
 				this.selectNodeWithDescendants(clickedNode, canvasView.canvas);
