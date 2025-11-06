@@ -1,4 +1,4 @@
-import { Plugin, WorkspaceLeaf } from 'obsidian';
+import { Plugin, PluginSettingTab, App, Setting } from 'obsidian';
 
 interface CanvasNode {
 	id: string;
@@ -25,15 +25,31 @@ interface CanvasView {
 	file: any;
 }
 
+interface CanvasAutoChildSelectorSettings {
+	modifierKey: 'ctrl' | 'alt' | 'shift' | 'none';
+}
+
+const DEFAULT_SETTINGS: CanvasAutoChildSelectorSettings = {
+	modifierKey: 'ctrl'
+}
+
 export default class CanvasAutoChildSelectorPlugin extends Plugin {
+	settings: CanvasAutoChildSelectorSettings;
+
 	async onload() {
 		console.log('Loading Canvas Auto Child Selector plugin');
+
+		// Load settings
+		await this.loadSettings();
+
+		// Add settings tab
+		this.addSettingTab(new CanvasAutoChildSelectorSettingTab(this.app, this));
 
 		// Register the click event handler for canvas
 		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
 			try {
-				// Check if Ctrl (Windows/Linux) or Cmd (Mac) is pressed
-				const modifierPressed = evt.ctrlKey || evt.metaKey;
+				// Check if the configured modifier key is pressed
+				const modifierPressed = this.isModifierPressed(evt);
 
 				if (!modifierPressed) {
 					return;
@@ -175,7 +191,66 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 		}
 	}
 
+	isModifierPressed(evt: MouseEvent): boolean {
+		switch (this.settings.modifierKey) {
+			case 'ctrl':
+				return evt.ctrlKey || evt.metaKey; // Ctrl on Windows/Linux, Cmd on Mac
+			case 'alt':
+				return evt.altKey;
+			case 'shift':
+				return evt.shiftKey;
+			case 'none':
+				return true; // Always active, no modifier needed
+			default:
+				return evt.ctrlKey || evt.metaKey;
+		}
+	}
+
+	async loadSettings() {
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+	}
+
+	async saveSettings() {
+		await this.saveData(this.settings);
+	}
+
 	onunload() {
 		console.log('Unloading Canvas Auto Child Selector plugin');
+	}
+}
+
+class CanvasAutoChildSelectorSettingTab extends PluginSettingTab {
+	plugin: CanvasAutoChildSelectorPlugin;
+
+	constructor(app: App, plugin: CanvasAutoChildSelectorPlugin) {
+		super(app, plugin);
+		this.plugin = plugin;
+	}
+
+	display(): void {
+		const {containerEl} = this;
+
+		containerEl.empty();
+
+		containerEl.createEl('h2', {text: 'Canvas Auto Child Selector Settings'});
+
+		new Setting(containerEl)
+			.setName('Modifier Key')
+			.setDesc('Choose which modifier key to hold while clicking a parent node to select all children')
+			.addDropdown(dropdown => dropdown
+				.addOption('ctrl', 'Ctrl/Cmd (Default)')
+				.addOption('alt', 'Alt/Option')
+				.addOption('shift', 'Shift')
+				.addOption('none', 'No Modifier (Always Active)')
+				.setValue(this.plugin.settings.modifierKey)
+				.onChange(async (value) => {
+					this.plugin.settings.modifierKey = value as 'ctrl' | 'alt' | 'shift' | 'none';
+					await this.plugin.saveSettings();
+				}));
+
+		containerEl.createEl('p', {
+			text: 'How to use: Hold the configured modifier key and click on any parent node in Canvas view. All child nodes and connecting edges will be selected automatically.',
+			cls: 'setting-item-description'
+		});
 	}
 }
