@@ -90,17 +90,37 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
     try {
       const target = evt.target;
       const nodeElement = target.closest(".canvas-node");
+      console.log("Canvas Auto Child Selector: Node element:", nodeElement);
       if (!nodeElement) {
+        console.log("Canvas Auto Child Selector: No .canvas-node element found");
         return null;
       }
       const el = nodeElement;
+      console.log("Canvas Auto Child Selector: Element properties:", {
+        hasNode: !!el.node,
+        dataset: el.dataset,
+        id: el.id,
+        className: el.className
+      });
       if (el.node) {
+        console.log("Canvas Auto Child Selector: Found node via el.node");
         return el.node;
       }
       const nodeId = ((_a = el.dataset) == null ? void 0 : _a.id) || el.getAttribute("data-id") || ((_b = el.dataset) == null ? void 0 : _b.nodeId) || el.getAttribute("data-node-id") || el.id;
+      console.log("Canvas Auto Child Selector: Node ID:", nodeId);
+      console.log("Canvas Auto Child Selector: Available nodes:", Array.from(canvasView.canvas.nodes.keys()));
       if (nodeId && canvasView.canvas.nodes.has(nodeId)) {
+        console.log("Canvas Auto Child Selector: Found node by ID match");
         return canvasView.canvas.nodes.get(nodeId) || null;
       }
+      for (const [id, node] of canvasView.canvas.nodes) {
+        const nodeObj = node;
+        if (nodeObj.nodeEl === nodeElement || nodeObj.containerEl === nodeElement) {
+          console.log("Canvas Auto Child Selector: Found node by element match:", id);
+          return node;
+        }
+      }
+      console.log("Canvas Auto Child Selector: Node not found by any method");
       return null;
     } catch (error) {
       console.error("Error getting clicked node:", error);
