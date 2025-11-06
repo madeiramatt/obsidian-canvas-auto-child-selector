@@ -28,179 +28,69 @@ __export(main_exports, {
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
-var DEFAULT_SETTINGS = {
-  modifierKey: "ctrl"
-};
 var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
   async onload() {
-    console.log("Loading Canvas Auto Child Selector plugin");
-    await this.loadSettings();
-    this.addSettingTab(new CanvasAutoChildSelectorSettingTab(this.app, this));
-    this.registerDomEvent(document, "click", (evt) => {
-      try {
-        const modifierPressed = this.isModifierPressed(evt);
-        console.log("Canvas Auto Child Selector: Click detected", {
-          modifierPressed,
-          modifierKey: this.settings.modifierKey,
-          ctrlKey: evt.ctrlKey,
-          metaKey: evt.metaKey,
-          altKey: evt.altKey,
-          shiftKey: evt.shiftKey
-        });
-        if (!modifierPressed) {
-          return;
-        }
-        const canvasView = this.getActiveCanvasView();
-        console.log("Canvas Auto Child Selector: Canvas view found:", !!canvasView);
-        if (!canvasView) {
-          return;
-        }
-        const clickedNode = this.getClickedNode(evt, canvasView);
-        console.log("Canvas Auto Child Selector: Clicked node found:", !!clickedNode, clickedNode == null ? void 0 : clickedNode.id);
-        if (!clickedNode) {
-          return;
-        }
-        evt.preventDefault();
-        evt.stopPropagation();
-        console.log("Canvas Auto Child Selector: Selecting descendants for node:", clickedNode.id);
-        this.selectNodeWithDescendants(clickedNode, canvasView.canvas);
-      } catch (error) {
-        console.error("Canvas Auto Child Selector error:", error);
+    console.log("Canvas Auto Child Selector: Plugin loaded");
+    this.registerDomEvent(document, "mousedown", (evt) => {
+      if (!evt.altKey || evt.button !== 0) {
+        return;
       }
-    }, true);
+      const canvasView = this.getCanvasView();
+      if (!canvasView) {
+        return;
+      }
+      setTimeout(() => {
+        this.handleAltClick(canvasView);
+      }, 10);
+    });
   }
-  getActiveCanvasView() {
-    try {
-      const activeLeaf = this.app.workspace.activeLeaf;
-      if (!activeLeaf) {
-        return null;
-      }
-      const view = activeLeaf.view;
-      if (view && view.getViewType && view.getViewType() === "canvas" && view.canvas) {
-        return view;
-      }
+  getCanvasView() {
+    var _a;
+    const leaf = this.app.workspace.activeLeaf;
+    if (!leaf)
       return null;
-    } catch (error) {
-      console.error("Error getting canvas view:", error);
-      return null;
+    const view = leaf.view;
+    if (((_a = view == null ? void 0 : view.getViewType) == null ? void 0 : _a.call(view)) === "canvas" && view.canvas) {
+      return view;
     }
+    return null;
   }
-  getClickedNode(evt, canvasView) {
-    var _a, _b;
-    try {
-      const target = evt.target;
-      const nodeElement = target.closest(".canvas-node");
-      console.log("Canvas Auto Child Selector: Node element:", nodeElement);
-      if (!nodeElement) {
-        console.log("Canvas Auto Child Selector: No .canvas-node element found");
-        return null;
+  handleAltClick(canvasView) {
+    const canvas = canvasView.canvas;
+    const selection = canvas.selection;
+    let selectedNode = null;
+    for (const item of selection) {
+      if (item.id && canvas.nodes.has(item.id)) {
+        selectedNode = item;
+        break;
       }
-      const el = nodeElement;
-      console.log("Canvas Auto Child Selector: Element properties:", {
-        hasNode: !!el.node,
-        dataset: el.dataset,
-        id: el.id,
-        className: el.className
-      });
-      if (el.node) {
-        console.log("Canvas Auto Child Selector: Found node via el.node");
-        return el.node;
-      }
-      const nodeId = ((_a = el.dataset) == null ? void 0 : _a.id) || el.getAttribute("data-id") || ((_b = el.dataset) == null ? void 0 : _b.nodeId) || el.getAttribute("data-node-id") || el.id;
-      console.log("Canvas Auto Child Selector: Node ID:", nodeId);
-      console.log("Canvas Auto Child Selector: Available nodes:", Array.from(canvasView.canvas.nodes.keys()));
-      if (nodeId && canvasView.canvas.nodes.has(nodeId)) {
-        console.log("Canvas Auto Child Selector: Found node by ID match");
-        return canvasView.canvas.nodes.get(nodeId) || null;
-      }
-      for (const [id, node] of canvasView.canvas.nodes) {
-        const nodeObj = node;
-        if (nodeObj.nodeEl === nodeElement || nodeObj.containerEl === nodeElement) {
-          console.log("Canvas Auto Child Selector: Found node by element match:", id);
-          return node;
+    }
+    if (!selectedNode) {
+      console.log("Canvas Auto Child Selector: No node selected");
+      return;
+    }
+    console.log("Canvas Auto Child Selector: Selected node:", selectedNode.id);
+    const nodesToSelect = /* @__PURE__ */ new Set();
+    const edgesToSelect = /* @__PURE__ */ new Set();
+    nodesToSelect.add(selectedNode);
+    this.findAllChildren(selectedNode.id, canvas, nodesToSelect, edgesToSelect);
+    console.log(`Canvas Auto Child Selector: Selecting ${nodesToSelect.size} nodes and ${edgesToSelect.size} edges`);
+    const itemsToSelect = [...nodesToSelect, ...edgesToSelect];
+    canvas.selectOnly(itemsToSelect);
+  }
+  findAllChildren(parentId, canvas, nodesToSelect, edgesToSelect) {
+    for (const edge of canvas.edges.values()) {
+      if (edge.fromNode === parentId) {
+        edgesToSelect.add(edge);
+        const childNode = canvas.nodes.get(edge.toNode);
+        if (childNode && !nodesToSelect.has(childNode)) {
+          nodesToSelect.add(childNode);
+          this.findAllChildren(edge.toNode, canvas, nodesToSelect, edgesToSelect);
         }
       }
-      console.log("Canvas Auto Child Selector: Node not found by any method");
-      return null;
-    } catch (error) {
-      console.error("Error getting clicked node:", error);
-      return null;
     }
-  }
-  selectNodeWithDescendants(parentNode, canvas) {
-    try {
-      const nodesToSelect = /* @__PURE__ */ new Set();
-      const edgesToSelect = /* @__PURE__ */ new Set();
-      nodesToSelect.add(parentNode);
-      this.findDescendants(parentNode, canvas, nodesToSelect, edgesToSelect);
-      const itemsToSelect = [
-        ...Array.from(nodesToSelect),
-        ...Array.from(edgesToSelect)
-      ];
-      if (canvas.selectOnly) {
-        canvas.selectOnly(itemsToSelect);
-      }
-      console.log(`Selected ${nodesToSelect.size} nodes and ${edgesToSelect.size} edges`);
-    } catch (error) {
-      console.error("Error selecting nodes:", error);
-    }
-  }
-  findDescendants(parentNode, canvas, nodesToSelect, edgesToSelect) {
-    try {
-      for (const [edgeId, edge] of canvas.edges) {
-        if (edge.fromNode === parentNode.id) {
-          edgesToSelect.add(edge);
-          const childNode = canvas.nodes.get(edge.toNode);
-          if (childNode && !nodesToSelect.has(childNode)) {
-            nodesToSelect.add(childNode);
-            this.findDescendants(childNode, canvas, nodesToSelect, edgesToSelect);
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error finding descendants:", error);
-    }
-  }
-  isModifierPressed(evt) {
-    switch (this.settings.modifierKey) {
-      case "ctrl":
-        return evt.ctrlKey || evt.metaKey;
-      case "alt":
-        return evt.altKey;
-      case "shift":
-        return evt.shiftKey;
-      case "none":
-        return true;
-      default:
-        return evt.ctrlKey || evt.metaKey;
-    }
-  }
-  async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-  }
-  async saveSettings() {
-    await this.saveData(this.settings);
   }
   onunload() {
-    console.log("Unloading Canvas Auto Child Selector plugin");
-  }
-};
-var CanvasAutoChildSelectorSettingTab = class extends import_obsidian.PluginSettingTab {
-  constructor(app, plugin) {
-    super(app, plugin);
-    this.plugin = plugin;
-  }
-  display() {
-    const { containerEl } = this;
-    containerEl.empty();
-    containerEl.createEl("h2", { text: "Canvas Auto Child Selector Settings" });
-    new import_obsidian.Setting(containerEl).setName("Modifier Key").setDesc("Choose which modifier key to hold while clicking a parent node to select all children").addDropdown((dropdown) => dropdown.addOption("ctrl", "Ctrl/Cmd (Default)").addOption("alt", "Alt/Option").addOption("shift", "Shift").addOption("none", "No Modifier (Always Active)").setValue(this.plugin.settings.modifierKey).onChange(async (value) => {
-      this.plugin.settings.modifierKey = value;
-      await this.plugin.saveSettings();
-    }));
-    containerEl.createEl("p", {
-      text: "How to use: Hold the configured modifier key and click on any parent node in Canvas view. All child nodes and connecting edges will be selected automatically.",
-      cls: "setting-item-description"
-    });
+    console.log("Canvas Auto Child Selector: Plugin unloaded");
   }
 };
