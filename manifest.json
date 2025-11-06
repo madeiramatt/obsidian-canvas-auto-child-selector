@@ -1,0 +1,10 @@
+{
+  "id": "canvas-auto-child-selector",
+  "name": "Canvas Auto Child Selector",
+  "version": "1.0.0",
+  "minAppVersion": "0.15.0",
+  "description": "Select parent nodes with all their children in Obsidian Canvas with a modifier click",
+  "author": "Your Name",
+  "authorUrl": "https://github.com/yourusername/obsidian-canvas-auto-child-selector",
+  "isDesktopOnly": false
+}
