@@ -4,17 +4,43 @@ An Obsidian plugin that allows you to select a parent node and all its children 
 
 ## Features
 
-- **Modifier Click Selection**: Hold Alt while clicking a node to select it along with all descendants
-- **Recursive Selection**: Automatically selects all children, grandchildren, and deeper descendants
-- **Edge Selection**: Includes all arrow connections from parent to child in the selection
-- **Replace Selection**: Replaces the current selection with the parent and all its descendants
+- **Alt-Click Shortcut**: Hold Alt while clicking a node to select it along with all descendants
+- **Command Palette Commands**: Three commands for different selection modes
+  - Select child nodes (direct children only)
+  - Select child nodes (all descendants)
+  - Select parent nodes
+- **Configurable Settings**: Customize behavior through plugin settings
+- **Multi-Node Support**: Select multiple nodes and apply operations to all of them
+- **Edge Selection**: Optionally include arrow connections in the selection
+- **Performance Safety**: Maximum recursion depth limit prevents infinite loops
 
 ## Usage
+
+### Alt-Click Shortcut
 
 1. Open a Canvas in Obsidian
 2. Hold `Alt`
 3. Click on any node that has children (nodes with arrows pointing to other nodes)
 4. The parent node, all descendants, and connecting edges will be selected
+
+### Command Palette
+
+1. Select one or more nodes in Canvas
+2. Open the command palette (`Ctrl/Cmd + P`)
+3. Run one of these commands:
+   - **Select child nodes (direct children only)** - Selects only immediate children
+   - **Select child nodes (all descendants)** - Selects all descendants recursively
+   - **Select parent nodes** - Selects all nodes with edges pointing to the selected node(s)
+
+## Settings
+
+Access settings via Settings → Community Plugins → Canvas Auto Child Selector
+
+- **Enable Alt-click shortcut** - Toggle the Alt-click behavior on/off
+- **Default to recursive selection** - When using Alt-click, select all descendants or just direct children
+- **Select connecting edges** - Include edges/arrows in the selection along with nodes
+- **Keep original selection** - Keep the initially selected node(s) in the final selection
+- **Maximum recursion depth** - Safety limit for traversing deep hierarchies (default: 100)
 
 ## Installation
 
@@ -35,13 +61,19 @@ An Obsidian plugin that allows you to select a parent node and all its children 
 
 ## How It Works
 
-The plugin intercepts click events on Canvas nodes when a modifier key is pressed. It then:
+The plugin provides two ways to select related nodes:
 
-1. Identifies the clicked node
-2. Traverses all edges originating from that node
-3. Recursively follows edges to find all descendants
-4. Selects all found nodes and their connecting edges
-5. Replaces the current canvas selection
+**Alt-Click Shortcut:**
+1. Intercepts click events when Alt key is pressed
+2. Identifies the clicked node after Canvas processes the click
+3. Traverses edges based on your settings (recursive or direct)
+4. Selects all found nodes and optionally their connecting edges
+
+**Command Palette:**
+1. Works with your current Canvas selection
+2. Supports multiple selected nodes at once
+3. Traverses edges in the specified direction (children or parents)
+4. Respects all plugin settings for edge inclusion and recursion limits
 
 ## Requirements
 

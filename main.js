@@ -28,9 +28,60 @@ __export(main_exports, {
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
+var DEFAULT_SETTINGS = {
+  defaultRecursive: true,
+  selectEdges: true,
+  maxRecursionDepth: 100,
+  keepOriginalSelection: true,
+  useAltClickShortcut: true
+};
 var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
   async onload() {
+    await this.loadSettings();
     console.log("Canvas Auto Child Selector: Plugin loaded");
+    this.addSettingTab(new CanvasAutoChildSelectorSettingTab(this.app, this));
+    this.addCommand({
+      id: "select-child-nodes-direct",
+      name: "Select child nodes (direct children only)",
+      checkCallback: (checking) => {
+        const canvasView = this.getCanvasView();
+        if (canvasView) {
+          if (!checking) {
+            this.selectChildren(canvasView, false);
+          }
+          return true;
+        }
+        return false;
+      }
+    });
+    this.addCommand({
+      id: "select-child-nodes-recursive",
+      name: "Select child nodes (all descendants)",
+      checkCallback: (checking) => {
+        const canvasView = this.getCanvasView();
+        if (canvasView) {
+          if (!checking) {
+            this.selectChildren(canvasView, true);
+          }
+          return true;
+        }
+        return false;
+      }
+    });
+    this.addCommand({
+      id: "select-parent-nodes",
+      name: "Select parent nodes",
+      checkCallback: (checking) => {
+        const canvasView = this.getCanvasView();
+        if (canvasView) {
+          if (!checking) {
+            this.selectParents(canvasView);
+          }
+          return true;
+        }
+        return false;
+      }
+    });
     this.registerDomEvent(document, "click", (evt) => {
       var _a;
       console.log("Canvas Auto Child Selector: Click detected", {
@@ -38,6 +89,9 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
         button: evt.button,
         target: (_a = evt.target) == null ? void 0 : _a.className
       });
+      if (!this.settings.useAltClickShortcut) {
+        return;
+      }
       if (!evt.altKey || evt.button !== 0) {
         return;
       }
@@ -64,70 +118,149 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
     }
     return null;
   }
-  handleAltClick(canvasView) {
+  selectChildren(canvasView, recursive) {
     const canvas = canvasView.canvas;
     const selection = canvas.selection;
     const canvasData = canvas.getData();
-    console.log("Canvas Auto Child Selector: Selection size:", selection.size);
-    console.log("Canvas Auto Child Selector: Total nodes in canvas:", canvasData.nodes.length);
-    console.log("Canvas Auto Child Selector: Total edges in canvas:", canvasData.edges.length);
-    let selectedNode = null;
-    let selectedNodeId = null;
-    const selectionArray = Array.from(selection);
-    console.log("Canvas Auto Child Selector: Items in selection:", selectionArray.map((item) => {
-      var _a;
-      return {
-        id: item.id,
-        type: (_a = item.constructor) == null ? void 0 : _a.name
-      };
-    }));
+    const selectedNodeIds = [];
     for (const item of selection) {
-      if (item.id) {
-        const nodeExists = canvasData.nodes.some((node) => node.id === item.id);
-        if (nodeExists) {
-          selectedNode = item;
-          selectedNodeId = item.id;
-          break;
-        }
+      if (item.id && canvasData.nodes.some((node) => node.id === item.id)) {
+        selectedNodeIds.push(item.id);
       }
     }
-    if (!selectedNode || !selectedNodeId) {
-      console.log("Canvas Auto Child Selector: No node selected");
+    if (selectedNodeIds.length === 0) {
+      console.log("Canvas Auto Child Selector: No nodes selected");
       return;
     }
-    console.log("Canvas Auto Child Selector: Selected node:", selectedNodeId);
     const nodeIdsToSelect = /* @__PURE__ */ new Set();
     const edgeIdsToSelect = /* @__PURE__ */ new Set();
-    nodeIdsToSelect.add(selectedNodeId);
-    this.findAllChildren(selectedNodeId, canvasData, nodeIdsToSelect, edgeIdsToSelect);
-    console.log(`Canvas Auto Child Selector: Selecting ${nodeIdsToSelect.size} nodes and ${edgeIdsToSelect.size} edges`);
+    if (this.settings.keepOriginalSelection) {
+      selectedNodeIds.forEach((id) => nodeIdsToSelect.add(id));
+    }
+    for (const nodeId of selectedNodeIds) {
+      if (recursive) {
+        this.findAllChildren(nodeId, canvasData, nodeIdsToSelect, edgeIdsToSelect, 0);
+      } else {
+        this.findDirectChildren(nodeId, canvasData, nodeIdsToSelect, edgeIdsToSelect);
+      }
+    }
+    this.selectNodesByIds(canvas, nodeIdsToSelect, edgeIdsToSelect);
+  }
+  selectParents(canvasView) {
+    const canvas = canvasView.canvas;
+    const selection = canvas.selection;
+    const canvasData = canvas.getData();
+    const selectedNodeIds = [];
+    for (const item of selection) {
+      if (item.id && canvasData.nodes.some((node) => node.id === item.id)) {
+        selectedNodeIds.push(item.id);
+      }
+    }
+    if (selectedNodeIds.length === 0) {
+      console.log("Canvas Auto Child Selector: No nodes selected");
+      return;
+    }
+    const nodeIdsToSelect = /* @__PURE__ */ new Set();
+    const edgeIdsToSelect = /* @__PURE__ */ new Set();
+    if (this.settings.keepOriginalSelection) {
+      selectedNodeIds.forEach((id) => nodeIdsToSelect.add(id));
+    }
+    for (const nodeId of selectedNodeIds) {
+      this.findParentNodes(nodeId, canvasData, nodeIdsToSelect, edgeIdsToSelect);
+    }
+    this.selectNodesByIds(canvas, nodeIdsToSelect, edgeIdsToSelect);
+  }
+  selectNodesByIds(canvas, nodeIds, edgeIds) {
     const nodesToSelect = [];
     const edgesToSelect = [];
-    for (const nodeId of nodeIdsToSelect) {
+    for (const nodeId of nodeIds) {
       const node = canvas.getNode(nodeId);
       if (node)
         nodesToSelect.push(node);
     }
-    for (const edgeId of edgeIdsToSelect) {
-      const edge = canvas.getEdge(edgeId);
-      if (edge)
-        edgesToSelect.push(edge);
+    if (this.settings.selectEdges) {
+      for (const edgeId of edgeIds) {
+        const edge = canvas.getEdge(edgeId);
+        if (edge)
+          edgesToSelect.push(edge);
+      }
     }
-    console.log(`Canvas Auto Child Selector: Found ${nodesToSelect.length} node objects and ${edgesToSelect.length} edge objects`);
-    const itemsToSelect = [...nodesToSelect, ...edgesToSelect];
+    const itemsToSelect = this.settings.selectEdges ? [...nodesToSelect, ...edgesToSelect] : nodesToSelect;
     canvas.selectOnly(itemsToSelect);
+    console.log(`Canvas Auto Child Selector: Selected ${nodesToSelect.length} nodes${this.settings.selectEdges ? ` and ${edgesToSelect.length} edges` : ""}`);
   }
-  findAllChildren(parentId, canvasData, nodeIdsToSelect, edgeIdsToSelect) {
+  handleAltClick(canvasView) {
+    this.selectChildren(canvasView, this.settings.defaultRecursive);
+  }
+  findAllChildren(parentId, canvasData, nodeIdsToSelect, edgeIdsToSelect, depth) {
+    if (depth >= this.settings.maxRecursionDepth) {
+      console.log("Canvas Auto Child Selector: Max recursion depth reached");
+      return;
+    }
     const childEdges = canvasData.edges.filter((edge) => edge.fromNode === parentId);
     for (const edge of childEdges) {
       edgeIdsToSelect.add(edge.id);
       if (!nodeIdsToSelect.has(edge.toNode)) {
         nodeIdsToSelect.add(edge.toNode);
-        this.findAllChildren(edge.toNode, canvasData, nodeIdsToSelect, edgeIdsToSelect);
+        this.findAllChildren(edge.toNode, canvasData, nodeIdsToSelect, edgeIdsToSelect, depth + 1);
       }
     }
   }
+  findDirectChildren(parentId, canvasData, nodeIdsToSelect, edgeIdsToSelect) {
+    const childEdges = canvasData.edges.filter((edge) => edge.fromNode === parentId);
+    for (const edge of childEdges) {
+      edgeIdsToSelect.add(edge.id);
+      nodeIdsToSelect.add(edge.toNode);
+    }
+  }
+  findParentNodes(childId, canvasData, nodeIdsToSelect, edgeIdsToSelect) {
+    const parentEdges = canvasData.edges.filter((edge) => edge.toNode === childId);
+    for (const edge of parentEdges) {
+      edgeIdsToSelect.add(edge.id);
+      nodeIdsToSelect.add(edge.fromNode);
+    }
+  }
+  async loadSettings() {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  }
+  async saveSettings() {
+    await this.saveData(this.settings);
+  }
   onunload() {
     console.log("Canvas Auto Child Selector: Plugin unloaded");
+  }
+};
+var CanvasAutoChildSelectorSettingTab = class extends import_obsidian.PluginSettingTab {
+  constructor(app, plugin) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
+  display() {
+    const { containerEl } = this;
+    containerEl.empty();
+    containerEl.createEl("h2", { text: "Canvas Auto Child Selector Settings" });
+    new import_obsidian.Setting(containerEl).setName("Enable Alt-click shortcut").setDesc("Hold Alt and click a node to select it with all its children").addToggle((toggle) => toggle.setValue(this.plugin.settings.useAltClickShortcut).onChange(async (value) => {
+      this.plugin.settings.useAltClickShortcut = value;
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian.Setting(containerEl).setName("Default to recursive selection").setDesc("When using commands, select all descendants (not just direct children)").addToggle((toggle) => toggle.setValue(this.plugin.settings.defaultRecursive).onChange(async (value) => {
+      this.plugin.settings.defaultRecursive = value;
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian.Setting(containerEl).setName("Select connecting edges").setDesc("Include edges/arrows in the selection along with nodes").addToggle((toggle) => toggle.setValue(this.plugin.settings.selectEdges).onChange(async (value) => {
+      this.plugin.settings.selectEdges = value;
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian.Setting(containerEl).setName("Keep original selection").setDesc("Keep the parent node(s) selected when selecting children").addToggle((toggle) => toggle.setValue(this.plugin.settings.keepOriginalSelection).onChange(async (value) => {
+      this.plugin.settings.keepOriginalSelection = value;
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian.Setting(containerEl).setName("Maximum recursion depth").setDesc("Maximum depth to traverse when selecting descendants (prevents infinite loops)").addText((text) => text.setPlaceholder("100").setValue(this.plugin.settings.maxRecursionDepth.toString()).onChange(async (value) => {
+      const depth = parseInt(value);
+      if (!isNaN(depth) && depth > 0 && depth <= 1e3) {
+        this.plugin.settings.maxRecursionDepth = depth;
+        await this.plugin.saveSettings();
+      }
+    }));
   }
 };
