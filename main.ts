@@ -327,17 +327,23 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 		console.log(`Canvas Auto Child Selector: findDirectChildren called for parent: ${parentId}`);
 		console.log(`Canvas Auto Child Selector: Total edges to search: ${canvas.edges.size}`);
 
-		// Log first few edges to see structure
+		// Log first edge to see complete structure
 		let edgeCount = 0;
 		for (const edge of canvas.edges.values()) {
-			if (edgeCount < 3) {
-				console.log(`Canvas Auto Child Selector: Sample edge structure:`, {
-					id: edge.id,
-					fromNode: edge.fromNode,
-					toNode: edge.toNode,
-					fromNodeType: typeof edge.fromNode,
-					toNodeType: typeof edge.toNode
-				});
+			if (edgeCount === 0) {
+				console.log(`Canvas Auto Child Selector: Inspecting edge structure:`, edge);
+				console.log(`Canvas Auto Child Selector: edge.from:`, edge.from);
+				console.log(`Canvas Auto Child Selector: edge.to:`, edge.to);
+				console.log(`Canvas Auto Child Selector: edge.from.node:`, edge.from?.node);
+				console.log(`Canvas Auto Child Selector: edge.to.node:`, edge.to?.node);
+
+				// Try to access different possible properties
+				if (edge.from) {
+					console.log(`Canvas Auto Child Selector: edge.from keys:`, Object.keys(edge.from));
+				}
+				if (edge.to) {
+					console.log(`Canvas Auto Child Selector: edge.to keys:`, Object.keys(edge.to));
+				}
 			}
 			edgeCount++;
 
