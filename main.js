@@ -172,22 +172,13 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
   }
   selectNodesByIds(canvas, nodeIds, edgeIds) {
     const nodesToSelect = [];
-    const edgesToSelect = [];
     for (const nodeId of nodeIds) {
       const node = canvas.nodes.get(nodeId);
       if (node)
         nodesToSelect.push(node);
     }
-    if (this.settings.selectEdges) {
-      for (const edgeId of edgeIds) {
-        const edge = canvas.edges.get(edgeId);
-        if (edge)
-          edgesToSelect.push(edge);
-      }
-    }
-    const itemsToSelect = this.settings.selectEdges ? [...nodesToSelect, ...edgesToSelect] : nodesToSelect;
-    canvas.selectOnly(itemsToSelect);
-    console.log(`Canvas Auto Child Selector: Selected ${nodesToSelect.length} nodes${this.settings.selectEdges ? ` and ${edgesToSelect.length} edges` : ""}`);
+    canvas.selectOnly(nodesToSelect);
+    console.log(`Canvas Auto Child Selector: Selected ${nodesToSelect.length} nodes`);
   }
   handleAltClick(canvasView) {
     this.selectChildren(canvasView, this.settings.defaultRecursive);
@@ -247,7 +238,7 @@ var CanvasAutoChildSelectorSettingTab = class extends import_obsidian.PluginSett
       this.plugin.settings.defaultRecursive = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(containerEl).setName("Select connecting edges").setDesc("Include edges/arrows in the selection along with nodes").addToggle((toggle) => toggle.setValue(this.plugin.settings.selectEdges).onChange(async (value) => {
+    new import_obsidian.Setting(containerEl).setName("Track connecting edges (informational)").setDesc("Note: Canvas API does not support selecting edges. This setting is kept for compatibility but edges are automatically highlighted when nodes are selected.").addToggle((toggle) => toggle.setValue(this.plugin.settings.selectEdges).onChange(async (value) => {
       this.plugin.settings.selectEdges = value;
       await this.plugin.saveSettings();
     }));
