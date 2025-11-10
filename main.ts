@@ -171,13 +171,23 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 			return;
 		}
 
-		// Select all collected nodes and edges
-		const itemsToSelect = this.settings.selectEdges
-			? [...nodesToSelect, ...edgesToSelect]
-			: [...nodesToSelect];
+		// Convert sets to arrays and filter out any invalid items
+		const nodesArray = Array.from(nodesToSelect).filter(n => n && typeof n === 'object');
+		const edgesArray = Array.from(edgesToSelect).filter(e => e && typeof e === 'object');
 
-		canvas.selectOnly(itemsToSelect);
-		console.log(`Canvas Auto Child Selector: Selected ${nodesToSelect.size} nodes${this.settings.selectEdges ? ` and ${edgesToSelect.size} edges` : ''}`);
+		// Build selection array - ONLY include edges if we have nodes
+		const itemsToSelect = this.settings.selectEdges
+			? [...nodesArray, ...edgesArray]
+			: nodesArray;
+
+		console.log(`Canvas Auto Child Selector: About to select ${nodesArray.length} nodes${this.settings.selectEdges ? ` and ${edgesArray.length} edges` : ''}`);
+
+		if (itemsToSelect.length > 0) {
+			canvas.selectOnly(itemsToSelect);
+			console.log('Canvas Auto Child Selector: Selection successful');
+		} else {
+			console.log('Canvas Auto Child Selector: No valid items to select after filtering');
+		}
 	}
 
 	selectParents(canvasView: CanvasView) {
@@ -217,13 +227,23 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 			return;
 		}
 
-		// Select all collected nodes and edges
-		const itemsToSelect = this.settings.selectEdges
-			? [...nodesToSelect, ...edgesToSelect]
-			: [...nodesToSelect];
+		// Convert sets to arrays and filter out any invalid items
+		const nodesArray = Array.from(nodesToSelect).filter(n => n && typeof n === 'object');
+		const edgesArray = Array.from(edgesToSelect).filter(e => e && typeof e === 'object');
 
-		canvas.selectOnly(itemsToSelect);
-		console.log(`Canvas Auto Child Selector: Selected ${nodesToSelect.size} nodes${this.settings.selectEdges ? ` and ${edgesToSelect.size} edges` : ''}`);
+		// Build selection array - ONLY include edges if we have nodes
+		const itemsToSelect = this.settings.selectEdges
+			? [...nodesArray, ...edgesArray]
+			: nodesArray;
+
+		console.log(`Canvas Auto Child Selector: About to select ${nodesArray.length} nodes${this.settings.selectEdges ? ` and ${edgesArray.length} edges` : ''}`);
+
+		if (itemsToSelect.length > 0) {
+			canvas.selectOnly(itemsToSelect);
+			console.log('Canvas Auto Child Selector: Selection successful');
+		} else {
+			console.log('Canvas Auto Child Selector: No valid items to select after filtering');
+		}
 	}
 
 	handleAltClick(canvasView: CanvasView) {

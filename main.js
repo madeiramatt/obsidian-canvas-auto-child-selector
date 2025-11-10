@@ -147,9 +147,16 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
       console.log("Canvas Auto Child Selector: No children found");
       return;
     }
-    const itemsToSelect = this.settings.selectEdges ? [...nodesToSelect, ...edgesToSelect] : [...nodesToSelect];
-    canvas.selectOnly(itemsToSelect);
-    console.log(`Canvas Auto Child Selector: Selected ${nodesToSelect.size} nodes${this.settings.selectEdges ? ` and ${edgesToSelect.size} edges` : ""}`);
+    const nodesArray = Array.from(nodesToSelect).filter((n) => n && typeof n === "object");
+    const edgesArray = Array.from(edgesToSelect).filter((e) => e && typeof e === "object");
+    const itemsToSelect = this.settings.selectEdges ? [...nodesArray, ...edgesArray] : nodesArray;
+    console.log(`Canvas Auto Child Selector: About to select ${nodesArray.length} nodes${this.settings.selectEdges ? ` and ${edgesArray.length} edges` : ""}`);
+    if (itemsToSelect.length > 0) {
+      canvas.selectOnly(itemsToSelect);
+      console.log("Canvas Auto Child Selector: Selection successful");
+    } else {
+      console.log("Canvas Auto Child Selector: No valid items to select after filtering");
+    }
   }
   selectParents(canvasView) {
     const canvas = canvasView.canvas;
@@ -176,9 +183,16 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
       console.log("Canvas Auto Child Selector: No parents found");
       return;
     }
-    const itemsToSelect = this.settings.selectEdges ? [...nodesToSelect, ...edgesToSelect] : [...nodesToSelect];
-    canvas.selectOnly(itemsToSelect);
-    console.log(`Canvas Auto Child Selector: Selected ${nodesToSelect.size} nodes${this.settings.selectEdges ? ` and ${edgesToSelect.size} edges` : ""}`);
+    const nodesArray = Array.from(nodesToSelect).filter((n) => n && typeof n === "object");
+    const edgesArray = Array.from(edgesToSelect).filter((e) => e && typeof e === "object");
+    const itemsToSelect = this.settings.selectEdges ? [...nodesArray, ...edgesArray] : nodesArray;
+    console.log(`Canvas Auto Child Selector: About to select ${nodesArray.length} nodes${this.settings.selectEdges ? ` and ${edgesArray.length} edges` : ""}`);
+    if (itemsToSelect.length > 0) {
+      canvas.selectOnly(itemsToSelect);
+      console.log("Canvas Auto Child Selector: Selection successful");
+    } else {
+      console.log("Canvas Auto Child Selector: No valid items to select after filtering");
+    }
   }
   handleAltClick(canvasView) {
     this.selectChildren(canvasView, this.settings.defaultRecursive);
