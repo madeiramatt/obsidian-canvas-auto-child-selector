@@ -121,103 +121,96 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
   selectChildren(canvasView, recursive) {
     const canvas = canvasView.canvas;
     const selection = canvas.selection;
-    const canvasData = canvas.getData();
-    const selectedNodeIds = [];
+    const selectedNodes = [];
     for (const item of selection) {
-      if (item.id && canvasData.nodes.some((node) => node.id === item.id)) {
-        selectedNodeIds.push(item.id);
+      if (item.id && canvas.nodes.has(item.id)) {
+        selectedNodes.push(item);
       }
     }
-    if (selectedNodeIds.length === 0) {
+    if (selectedNodes.length === 0) {
       console.log("Canvas Auto Child Selector: No nodes selected");
       return;
     }
-    const nodeIdsToSelect = /* @__PURE__ */ new Set();
-    const edgeIdsToSelect = /* @__PURE__ */ new Set();
+    const nodesToSelect = /* @__PURE__ */ new Set();
+    const edgesToSelect = /* @__PURE__ */ new Set();
     if (this.settings.keepOriginalSelection) {
-      selectedNodeIds.forEach((id) => nodeIdsToSelect.add(id));
+      selectedNodes.forEach((node) => nodesToSelect.add(node));
     }
-    for (const nodeId of selectedNodeIds) {
+    for (const node of selectedNodes) {
       if (recursive) {
-        this.findAllChildren(nodeId, canvasData, nodeIdsToSelect, edgeIdsToSelect, 0);
+        this.findAllChildren(node.id, canvas, nodesToSelect, edgesToSelect, 0);
       } else {
-        this.findDirectChildren(nodeId, canvasData, nodeIdsToSelect, edgeIdsToSelect);
+        this.findDirectChildren(node.id, canvas, nodesToSelect, edgesToSelect);
       }
     }
-    this.selectNodesByIds(canvas, nodeIdsToSelect, edgeIdsToSelect);
+    const itemsToSelect = this.settings.selectEdges ? [...nodesToSelect, ...edgesToSelect] : [...nodesToSelect];
+    canvas.selectOnly(itemsToSelect);
+    console.log(`Canvas Auto Child Selector: Selected ${nodesToSelect.size} nodes${this.settings.selectEdges ? ` and ${edgesToSelect.size} edges` : ""}`);
   }
   selectParents(canvasView) {
     const canvas = canvasView.canvas;
     const selection = canvas.selection;
-    const canvasData = canvas.getData();
-    const selectedNodeIds = [];
+    const selectedNodes = [];
     for (const item of selection) {
-      if (item.id && canvasData.nodes.some((node) => node.id === item.id)) {
-        selectedNodeIds.push(item.id);
+      if (item.id && canvas.nodes.has(item.id)) {
+        selectedNodes.push(item);
       }
     }
-    if (selectedNodeIds.length === 0) {
+    if (selectedNodes.length === 0) {
       console.log("Canvas Auto Child Selector: No nodes selected");
       return;
     }
-    const nodeIdsToSelect = /* @__PURE__ */ new Set();
-    const edgeIdsToSelect = /* @__PURE__ */ new Set();
+    const nodesToSelect = /* @__PURE__ */ new Set();
+    const edgesToSelect = /* @__PURE__ */ new Set();
     if (this.settings.keepOriginalSelection) {
-      selectedNodeIds.forEach((id) => nodeIdsToSelect.add(id));
+      selectedNodes.forEach((node) => nodesToSelect.add(node));
     }
-    for (const nodeId of selectedNodeIds) {
-      this.findParentNodes(nodeId, canvasData, nodeIdsToSelect, edgeIdsToSelect);
+    for (const node of selectedNodes) {
+      this.findParentNodes(node.id, canvas, nodesToSelect, edgesToSelect);
     }
-    this.selectNodesByIds(canvas, nodeIdsToSelect, edgeIdsToSelect);
-  }
-  selectNodesByIds(canvas, nodeIds, edgeIds) {
-    const nodesToSelect = [];
-    const edgesToSelect = [];
-    for (const nodeId of nodeIds) {
-      const node = canvas.getNode(nodeId);
-      if (node)
-        nodesToSelect.push(node);
-    }
-    if (this.settings.selectEdges) {
-      for (const edgeId of edgeIds) {
-        const edge = canvas.getEdge(edgeId);
-        if (edge)
-          edgesToSelect.push(edge);
-      }
-    }
-    const itemsToSelect = this.settings.selectEdges ? [...nodesToSelect, ...edgesToSelect] : nodesToSelect;
+    const itemsToSelect = this.settings.selectEdges ? [...nodesToSelect, ...edgesToSelect] : [...nodesToSelect];
     canvas.selectOnly(itemsToSelect);
-    console.log(`Canvas Auto Child Selector: Selected ${nodesToSelect.length} nodes${this.settings.selectEdges ? ` and ${edgesToSelect.length} edges` : ""}`);
+    console.log(`Canvas Auto Child Selector: Selected ${nodesToSelect.size} nodes${this.settings.selectEdges ? ` and ${edgesToSelect.size} edges` : ""}`);
   }
   handleAltClick(canvasView) {
     this.selectChildren(canvasView, this.settings.defaultRecursive);
   }
-  findAllChildren(parentId, canvasData, nodeIdsToSelect, edgeIdsToSelect, depth) {
+  findAllChildren(parentId, canvas, nodesToSelect, edgesToSelect, depth) {
     if (depth >= this.settings.maxRecursionDepth) {
       console.log("Canvas Auto Child Selector: Max recursion depth reached");
       return;
     }
-    const childEdges = canvasData.edges.filter((edge) => edge.fromNode === parentId);
-    for (const edge of childEdges) {
-      edgeIdsToSelect.add(edge.id);
-      if (!nodeIdsToSelect.has(edge.toNode)) {
-        nodeIdsToSelect.add(edge.toNode);
-        this.findAllChildren(edge.toNode, canvasData, nodeIdsToSelect, edgeIdsToSelect, depth + 1);
+    for (const edge of canvas.edges.values()) {
+      if (edge.fromNode === parentId) {
+        edgesToSelect.add(edge);
+        const childNode = canvas.nodes.get(edge.toNode);
+        if (childNode && !nodesToSelect.has(childNode)) {
+          nodesToSelect.add(childNode);
+          this.findAllChildren(edge.toNode, canvas, nodesToSelect, edgesToSelect, depth + 1);
+        }
       }
     }
   }
-  findDirectChildren(parentId, canvasData, nodeIdsToSelect, edgeIdsToSelect) {
-    const childEdges = canvasData.edges.filter((edge) => edge.fromNode === parentId);
-    for (const edge of childEdges) {
-      edgeIdsToSelect.add(edge.id);
-      nodeIdsToSelect.add(edge.toNode);
+  findDirectChildren(parentId, canvas, nodesToSelect, edgesToSelect) {
+    for (const edge of canvas.edges.values()) {
+      if (edge.fromNode === parentId) {
+        edgesToSelect.add(edge);
+        const childNode = canvas.nodes.get(edge.toNode);
+        if (childNode) {
+          nodesToSelect.add(childNode);
+        }
+      }
     }
   }
-  findParentNodes(childId, canvasData, nodeIdsToSelect, edgeIdsToSelect) {
-    const parentEdges = canvasData.edges.filter((edge) => edge.toNode === childId);
-    for (const edge of parentEdges) {
-      edgeIdsToSelect.add(edge.id);
-      nodeIdsToSelect.add(edge.fromNode);
+  findParentNodes(childId, canvas, nodesToSelect, edgesToSelect) {
+    for (const edge of canvas.edges.values()) {
+      if (edge.toNode === childId) {
+        edgesToSelect.add(edge);
+        const parentNode = canvas.nodes.get(edge.fromNode);
+        if (parentNode) {
+          nodesToSelect.add(parentNode);
+        }
+      }
     }
   }
   async loadSettings() {
