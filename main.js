@@ -121,11 +121,18 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
   selectChildren(canvasView, recursive) {
     const canvas = canvasView.canvas;
     const selection = canvas.selection;
+    console.log("Canvas Auto Child Selector: Starting selectChildren, recursive:", recursive);
+    console.log("Canvas Auto Child Selector: Total nodes in canvas:", canvas.nodes.size);
+    console.log("Canvas Auto Child Selector: Total edges in canvas:", canvas.edges.size);
     const selectedNodes = [];
     for (const item of selection) {
       if (item.id && canvas.nodes.has(item.id)) {
         selectedNodes.push(item);
       }
+    }
+    console.log("Canvas Auto Child Selector: Selected nodes count:", selectedNodes.length);
+    if (selectedNodes.length > 0) {
+      console.log("Canvas Auto Child Selector: Selected node IDs:", selectedNodes.map((n) => n.id));
     }
     if (selectedNodes.length === 0) {
       console.log("Canvas Auto Child Selector: No nodes selected");
@@ -135,14 +142,17 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
     const edgesToSelect = /* @__PURE__ */ new Set();
     if (this.settings.keepOriginalSelection) {
       selectedNodes.forEach((node) => nodesToSelect.add(node));
+      console.log("Canvas Auto Child Selector: Added original nodes to selection");
     }
     for (const node of selectedNodes) {
+      console.log("Canvas Auto Child Selector: Finding children for node:", node.id);
       if (recursive) {
         this.findAllChildren(node.id, canvas, nodesToSelect, edgesToSelect, 0);
       } else {
         this.findDirectChildren(node.id, canvas, nodesToSelect, edgesToSelect);
       }
     }
+    console.log("Canvas Auto Child Selector: After finding children - nodes:", nodesToSelect.size, "edges:", edgesToSelect.size);
     if (nodesToSelect.size === 0) {
       console.log("Canvas Auto Child Selector: No children found");
       return;
@@ -202,15 +212,24 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
       console.log("Canvas Auto Child Selector: Max recursion depth reached");
       return;
     }
+    let edgesFound = 0;
     for (const edge of canvas.edges.values()) {
       if (edge.fromNode === parentId) {
+        edgesFound++;
+        console.log(`Canvas Auto Child Selector: Found child edge from ${parentId} to ${edge.toNode}`);
         edgesToSelect.add(edge);
         const childNode = canvas.nodes.get(edge.toNode);
         if (childNode && !nodesToSelect.has(childNode)) {
           nodesToSelect.add(childNode);
+          console.log(`Canvas Auto Child Selector: Added child node ${edge.toNode}`);
           this.findAllChildren(edge.toNode, canvas, nodesToSelect, edgesToSelect, depth + 1);
+        } else if (!childNode) {
+          console.log(`Canvas Auto Child Selector: WARNING - Edge points to non-existent node ${edge.toNode}`);
         }
       }
+    }
+    if (edgesFound === 0 && depth === 0) {
+      console.log(`Canvas Auto Child Selector: No edges found from parent ${parentId}`);
     }
   }
   findDirectChildren(parentId, canvas, nodesToSelect, edgesToSelect) {
