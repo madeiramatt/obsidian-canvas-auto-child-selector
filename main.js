@@ -165,7 +165,13 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
       canvas.selection.clear();
       itemsToSelect.forEach((item) => {
         canvas.selection.add(item);
+        if (item.setSelected) {
+          item.setSelected(true);
+        }
       });
+      if (canvasView.requestSave) {
+        canvasView.requestSave();
+      }
       canvas.requestFrame();
       console.log("Canvas Auto Child Selector: Selection successful");
     } else {
@@ -205,7 +211,13 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
       canvas.selection.clear();
       itemsToSelect.forEach((item) => {
         canvas.selection.add(item);
+        if (item.setSelected) {
+          item.setSelected(true);
+        }
       });
+      if (canvasView.requestSave) {
+        canvasView.requestSave();
+      }
       canvas.requestFrame();
       console.log("Canvas Auto Child Selector: Selection successful");
     } else {
@@ -245,12 +257,26 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
     }
   }
   findDirectChildren(parentId, canvas, nodesToSelect, edgesToSelect) {
-    var _a, _b, _c;
+    var _a, _b;
     console.log(`Canvas Auto Child Selector: findDirectChildren called for parent: ${parentId}`);
     console.log(`Canvas Auto Child Selector: Total edges to search: ${canvas.edges.size}`);
     for (const edge of canvas.edges.values()) {
-      if (((_a = edge.from) == null ? void 0 : _a.id) === parentId) {
-        console.log(`Canvas Auto Child Selector: Found matching edge from ${parentId} to ${(_b = edge.to) == null ? void 0 : _b.id}`);
+      if (edgeCount === 0) {
+        console.log(`Canvas Auto Child Selector: Inspecting edge structure:`, edge);
+        console.log(`Canvas Auto Child Selector: edge.from:`, edge.from);
+        console.log(`Canvas Auto Child Selector: edge.to:`, edge.to);
+        console.log(`Canvas Auto Child Selector: edge.from.node:`, (_a = edge.from) == null ? void 0 : _a.node);
+        console.log(`Canvas Auto Child Selector: edge.to.node:`, (_b = edge.to) == null ? void 0 : _b.node);
+        if (edge.from) {
+          console.log(`Canvas Auto Child Selector: edge.from keys:`, Object.keys(edge.from));
+        }
+        if (edge.to) {
+          console.log(`Canvas Auto Child Selector: edge.to keys:`, Object.keys(edge.to));
+        }
+      }
+      edgeCount++;
+      if (edge.fromNode === parentId) {
+        console.log(`Canvas Auto Child Selector: Found matching edge from ${parentId} to ${edge.toNode}`);
         edgesToSelect.add(edge);
         const childNodeId = (_c = edge.to) == null ? void 0 : _c.id;
         if (childNodeId) {
