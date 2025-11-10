@@ -23,8 +23,8 @@ interface CanvasData {
 
 interface Canvas {
 	getData: () => CanvasData;
-	getNode: (id: string) => any;
-	getEdge: (id: string) => any;
+	nodes: Map<string, any>;
+	edges: Map<string, any>;
 	selection: Set<any>;
 	selectOnly: (items: any[]) => void;
 }
@@ -233,13 +233,13 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 		const edgesToSelect: any[] = [];
 
 		for (const nodeId of nodeIds) {
-			const node = canvas.getNode(nodeId);
+			const node = canvas.nodes.get(nodeId);
 			if (node) nodesToSelect.push(node);
 		}
 
 		if (this.settings.selectEdges) {
 			for (const edgeId of edgeIds) {
-				const edge = canvas.getEdge(edgeId);
+				const edge = canvas.edges.get(edgeId);
 				if (edge) edgesToSelect.push(edge);
 			}
 		}
