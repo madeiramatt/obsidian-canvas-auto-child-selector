@@ -33,7 +33,6 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
-		console.log('Canvas Auto Child Selector: Plugin loaded');
 
 		// Add settings tab
 		this.addSettingTab(new CanvasAutoChildSelectorSettingTab(this.app, this));
@@ -84,14 +83,8 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 			}
 		});
 
-		// Listen for click events (after the canvas processes it)
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('Canvas Auto Child Selector: Click detected', {
-				altKey: evt.altKey,
-				button: evt.button,
-				target: (evt.target as HTMLElement)?.className
-			});
-
+		// Listen for mouseup events instead of click to run after canvas's click handler
+		this.registerDomEvent(document, 'mouseup', (evt: MouseEvent) => {
 			// Only trigger if Alt-click shortcut is enabled
 			if (!this.settings.useAltClickShortcut) {
 				return;
@@ -102,21 +95,24 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 				return;
 			}
 
-			console.log('Canvas Auto Child Selector: Alt+click confirmed');
-
 			// Get the active canvas view
 			const canvasView = this.getCanvasView();
-			console.log('Canvas Auto Child Selector: Canvas view found:', !!canvasView);
-
 			if (!canvasView) {
 				return;
 			}
 
-			// Small delay to let canvas process the click and select the node
-			setTimeout(() => {
-				console.log('Canvas Auto Child Selector: Checking selection after delay');
-				this.handleAltClick(canvasView);
-			}, 50);
+			// Use requestAnimationFrame to run after the canvas's click handlers
+			requestAnimationFrame(() => {
+				setTimeout(() => {
+					console.log(`[ACCS] Running selection after mouseup + RAF + timeout`);
+					this.handleAltClick(canvasView);
+
+					// Check if selection persists
+					setTimeout(() => {
+						console.log(`[ACCS] Selection size after 100ms: ${canvasView.canvas.selection.size}`);
+					}, 100);
+				}, 0);
+			});
 		});
 	}
 
@@ -135,10 +131,6 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 		const canvas = canvasView.canvas;
 		const selection = canvas.selection;
 
-		console.log('Canvas Auto Child Selector: Starting selectChildren, recursive:', recursive);
-		console.log('Canvas Auto Child Selector: Total nodes in canvas:', canvas.nodes.size);
-		console.log('Canvas Auto Child Selector: Total edges in canvas:', canvas.edges.size);
-
 		// Get all selected nodes (not edges)
 		const selectedNodes: any[] = [];
 		for (const item of selection) {
@@ -147,13 +139,9 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 			}
 		}
 
-		console.log('Canvas Auto Child Selector: Selected nodes count:', selectedNodes.length);
-		if (selectedNodes.length > 0) {
-			console.log('Canvas Auto Child Selector: Selected node IDs:', selectedNodes.map(n => n.id));
-		}
+		console.log(`[ACCS] Selected nodes: ${selectedNodes.length}, IDs: [${selectedNodes.map(n => n.id).join(', ')}]`);
 
 		if (selectedNodes.length === 0) {
-			console.log('Canvas Auto Child Selector: No nodes selected');
 			return;
 		}
 
@@ -164,12 +152,10 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 		// Add original nodes if keeping selection
 		if (this.settings.keepOriginalSelection) {
 			selectedNodes.forEach(node => nodesToSelect.add(node));
-			console.log('Canvas Auto Child Selector: Added original nodes to selection');
 		}
 
 		// Find children for each selected node
 		for (const node of selectedNodes) {
-			console.log('Canvas Auto Child Selector: Finding children for node:', node.id);
 			if (recursive) {
 				this.findAllChildren(node.id, canvas, nodesToSelect, edgesToSelect, 0);
 			} else {
@@ -177,11 +163,10 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 			}
 		}
 
-		console.log('Canvas Auto Child Selector: After finding children - nodes:', nodesToSelect.size, 'edges:', edgesToSelect.size);
+		console.log(`[ACCS] Found ${nodesToSelect.size} nodes (including parent if kept), ${edgesToSelect.size} edges`);
 
 		// Don't select if we have no nodes to select
 		if (nodesToSelect.size === 0) {
-			console.log('Canvas Auto Child Selector: No children found');
 			return;
 		}
 
@@ -194,30 +179,29 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 			? [...nodesArray, ...edgesArray]
 			: nodesArray;
 
-		console.log(`Canvas Auto Child Selector: About to select ${nodesArray.length} nodes${this.settings.selectEdges ? ` and ${edgesArray.length} edges` : ''}`);
+		console.log(`[ACCS] Selecting ${nodesArray.length} nodes and ${edgesArray.length} edges`);
 
 		if (itemsToSelect.length > 0) {
-			// Clear current selection and update visual state
+			// Use the selection API directly
 			canvas.selection.clear();
-
-			// Add items to selection and update their visual state
 			itemsToSelect.forEach(item => {
 				canvas.selection.add(item);
-				// Update the visual selection state for each item
-				if (item.setSelected) {
-					item.setSelected(true);
+			});
+
+			// Try multiple methods to trigger visual update
+			canvas.requestFrame(); // Trigger UI update
+
+			// Also try calling markDirty on each node
+			nodesArray.forEach((node: any) => {
+				if (node.canvas && node.canvas === canvas) {
+					if (typeof node.render === 'function') {
+						node.render();
+					}
 				}
 			});
 
-			// Mark the view as dirty to force a complete redraw
-			if ((canvasView as any).requestSave) {
-				(canvasView as any).requestSave();
-			}
-
-			canvas.requestFrame(); // Trigger UI update
-			console.log('Canvas Auto Child Selector: Selection successful');
-		} else {
-			console.log('Canvas Auto Child Selector: No valid items to select after filtering');
+			console.log(`[ACCS] Selection complete. Canvas selection size: ${canvas.selection.size}`);
+			console.log(`[ACCS] Selection contents:`, Array.from(canvas.selection).map((item: any) => ({ id: item.id, type: item.constructor?.name })));
 		}
 	}
 
@@ -234,7 +218,6 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 		}
 
 		if (selectedNodes.length === 0) {
-			console.log('Canvas Auto Child Selector: No nodes selected');
 			return;
 		}
 
@@ -254,7 +237,6 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 
 		// Don't select if we have no nodes to select
 		if (nodesToSelect.size === 0) {
-			console.log('Canvas Auto Child Selector: No parents found');
 			return;
 		}
 
@@ -267,30 +249,13 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 			? [...nodesArray, ...edgesArray]
 			: nodesArray;
 
-		console.log(`Canvas Auto Child Selector: About to select ${nodesArray.length} nodes${this.settings.selectEdges ? ` and ${edgesArray.length} edges` : ''}`);
-
 		if (itemsToSelect.length > 0) {
-			// Clear current selection and update visual state
+			// Use the selection API directly
 			canvas.selection.clear();
-
-			// Add items to selection and update their visual state
 			itemsToSelect.forEach(item => {
 				canvas.selection.add(item);
-				// Update the visual selection state for each item
-				if (item.setSelected) {
-					item.setSelected(true);
-				}
 			});
-
-			// Mark the view as dirty to force a complete redraw
-			if ((canvasView as any).requestSave) {
-				(canvasView as any).requestSave();
-			}
-
 			canvas.requestFrame(); // Trigger UI update
-			console.log('Canvas Auto Child Selector: Selection successful');
-		} else {
-			console.log('Canvas Auto Child Selector: No valid items to select after filtering');
 		}
 	}
 
@@ -308,37 +273,23 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 	) {
 		// Stop if we've reached max recursion depth
 		if (depth >= this.settings.maxRecursionDepth) {
-			console.log('Canvas Auto Child Selector: Max recursion depth reached');
 			return;
 		}
 
 		// Find all edges going FROM this parent
-		let edgesFound = 0;
 		for (const edge of canvas.edges.values()) {
-			if (edge.fromNode === parentId) {
-				edgesFound++;
-				console.log(`Canvas Auto Child Selector: Found child edge from ${parentId} to ${edge.toNode}`);
+			const fromNode = edge.from?.node;
+			const toNode = edge.to?.node;
 
+			// edge.from.node and edge.to.node are node objects, not IDs
+			if (fromNode?.id === parentId && toNode && !nodesToSelect.has(toNode)) {
 				// Add this edge object
 				edgesToSelect.add(edge);
-
-				// Get the child node object
-				const childNode = canvas.nodes.get(edge.toNode);
-				if (childNode && !nodesToSelect.has(childNode)) {
-					// Add the child node object
-					nodesToSelect.add(childNode);
-					console.log(`Canvas Auto Child Selector: Added child node ${edge.toNode}`);
-
-					// Recursively find this child's children
-					this.findAllChildren(edge.toNode, canvas, nodesToSelect, edgesToSelect, depth + 1);
-				} else if (!childNode) {
-					console.log(`Canvas Auto Child Selector: WARNING - Edge points to non-existent node ${edge.toNode}`);
-				}
+				// Add the child node object directly (it's already the node object)
+				nodesToSelect.add(toNode);
+				// Recursively find this child's children
+				this.findAllChildren(toNode.id, canvas, nodesToSelect, edgesToSelect, depth + 1);
 			}
-		}
-
-		if (edgesFound === 0 && depth === 0) {
-			console.log(`Canvas Auto Child Selector: No edges found from parent ${parentId}`);
 		}
 	}
 
@@ -348,46 +299,19 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 		nodesToSelect: Set<any>,
 		edgesToSelect: Set<any>
 	) {
-		console.log(`Canvas Auto Child Selector: findDirectChildren called for parent: ${parentId}`);
-		console.log(`Canvas Auto Child Selector: Total edges to search: ${canvas.edges.size}`);
-
-		// Log first edge to see complete structure
-		let edgeCount = 0;
+		// Find all edges where the from node matches the parent
 		for (const edge of canvas.edges.values()) {
-			if (edgeCount === 0) {
-				console.log(`Canvas Auto Child Selector: Inspecting edge structure:`, edge);
-				console.log(`Canvas Auto Child Selector: edge.from:`, edge.from);
-				console.log(`Canvas Auto Child Selector: edge.to:`, edge.to);
-				console.log(`Canvas Auto Child Selector: edge.from.node:`, edge.from?.node);
-				console.log(`Canvas Auto Child Selector: edge.to.node:`, edge.to?.node);
+			const fromNode = edge.from?.node;
+			const toNode = edge.to?.node;
 
-				// Try to access different possible properties
-				if (edge.from) {
-					console.log(`Canvas Auto Child Selector: edge.from keys:`, Object.keys(edge.from));
-				}
-				if (edge.to) {
-					console.log(`Canvas Auto Child Selector: edge.to keys:`, Object.keys(edge.to));
-				}
-			}
-			edgeCount++;
-
-			if (edge.fromNode === parentId) {
-				console.log(`Canvas Auto Child Selector: Found matching edge from ${parentId} to ${edge.toNode}`);
+			// edge.from.node and edge.to.node are node objects, not IDs
+			if (fromNode?.id === parentId && toNode) {
 				// Add this edge object
 				edgesToSelect.add(edge);
-
-				// Get and add the child node object
-				const childNode = canvas.nodes.get(edge.toNode);
-				if (childNode) {
-					nodesToSelect.add(childNode);
-					console.log(`Canvas Auto Child Selector: Added child node ${edge.toNode}`);
-				} else {
-					console.log(`Canvas Auto Child Selector: WARNING - Could not find child node ${edge.toNode}`);
-				}
+				// Add the child node object directly (it's already the node object)
+				nodesToSelect.add(toNode);
 			}
 		}
-
-		console.log(`Canvas Auto Child Selector: findDirectChildren complete - found ${nodesToSelect.size} children`);
 	}
 
 	findParentNodes(
@@ -398,14 +322,17 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 	) {
 		// Find all edges going TO this child (parents)
 		for (const edge of canvas.edges.values()) {
-			if (edge.toNode === childId) {
+			const fromNode = edge.from?.node;
+			const toNode = edge.to?.node;
+
+			// edge.from.node and edge.to.node are node objects, not IDs
+			if (toNode?.id === childId) {
 				// Add this edge object
 				edgesToSelect.add(edge);
 
-				// Get and add the parent node object
-				const parentNode = canvas.nodes.get(edge.fromNode);
-				if (parentNode) {
-					nodesToSelect.add(parentNode);
+				// Add the parent node object directly (it's already the node object)
+				if (fromNode) {
+					nodesToSelect.add(fromNode);
 				}
 			}
 		}
@@ -420,7 +347,6 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 	}
 
 	onunload() {
-		console.log('Canvas Auto Child Selector: Plugin unloaded');
 	}
 }
 
