@@ -331,10 +331,14 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 		let edgeCount = 0;
 		for (const edge of canvas.edges.values()) {
 			if (edgeCount < 3) {
+				console.log(`Canvas Auto Child Selector: Full edge object:`, edge);
+				console.log(`Canvas Auto Child Selector: Edge keys:`, Object.keys(edge));
 				console.log(`Canvas Auto Child Selector: Sample edge structure:`, {
 					id: edge.id,
 					fromNode: edge.fromNode,
 					toNode: edge.toNode,
+					from: edge.from,
+					to: edge.to,
 					fromNodeType: typeof edge.fromNode,
 					toNodeType: typeof edge.toNode
 				});
