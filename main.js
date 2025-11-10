@@ -143,6 +143,10 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
         this.findDirectChildren(node.id, canvas, nodesToSelect, edgesToSelect);
       }
     }
+    if (nodesToSelect.size === 0) {
+      console.log("Canvas Auto Child Selector: No children found");
+      return;
+    }
     const itemsToSelect = this.settings.selectEdges ? [...nodesToSelect, ...edgesToSelect] : [...nodesToSelect];
     canvas.selectOnly(itemsToSelect);
     console.log(`Canvas Auto Child Selector: Selected ${nodesToSelect.size} nodes${this.settings.selectEdges ? ` and ${edgesToSelect.size} edges` : ""}`);
@@ -167,6 +171,10 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
     }
     for (const node of selectedNodes) {
       this.findParentNodes(node.id, canvas, nodesToSelect, edgesToSelect);
+    }
+    if (nodesToSelect.size === 0) {
+      console.log("Canvas Auto Child Selector: No parents found");
+      return;
     }
     const itemsToSelect = this.settings.selectEdges ? [...nodesToSelect, ...edgesToSelect] : [...nodesToSelect];
     canvas.selectOnly(itemsToSelect);

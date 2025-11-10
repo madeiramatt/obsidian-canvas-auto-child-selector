@@ -165,6 +165,12 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 			}
 		}
 
+		// Don't select if we have no nodes to select
+		if (nodesToSelect.size === 0) {
+			console.log('Canvas Auto Child Selector: No children found');
+			return;
+		}
+
 		// Select all collected nodes and edges
 		const itemsToSelect = this.settings.selectEdges
 			? [...nodesToSelect, ...edgesToSelect]
@@ -203,6 +209,12 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 		// Find parents for each selected node
 		for (const node of selectedNodes) {
 			this.findParentNodes(node.id, canvas, nodesToSelect, edgesToSelect);
+		}
+
+		// Don't select if we have no nodes to select
+		if (nodesToSelect.size === 0) {
+			console.log('Canvas Auto Child Selector: No parents found');
+			return;
 		}
 
 		// Select all collected nodes and edges
