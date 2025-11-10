@@ -324,9 +324,25 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 		nodesToSelect: Set<any>,
 		edgesToSelect: Set<any>
 	) {
-		// Find all edges going FROM this parent (only direct children)
+		console.log(`Canvas Auto Child Selector: findDirectChildren called for parent: ${parentId}`);
+		console.log(`Canvas Auto Child Selector: Total edges to search: ${canvas.edges.size}`);
+
+		// Log first few edges to see structure
+		let edgeCount = 0;
 		for (const edge of canvas.edges.values()) {
+			if (edgeCount < 3) {
+				console.log(`Canvas Auto Child Selector: Sample edge structure:`, {
+					id: edge.id,
+					fromNode: edge.fromNode,
+					toNode: edge.toNode,
+					fromNodeType: typeof edge.fromNode,
+					toNodeType: typeof edge.toNode
+				});
+			}
+			edgeCount++;
+
 			if (edge.fromNode === parentId) {
+				console.log(`Canvas Auto Child Selector: Found matching edge from ${parentId} to ${edge.toNode}`);
 				// Add this edge object
 				edgesToSelect.add(edge);
 
@@ -334,9 +350,14 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 				const childNode = canvas.nodes.get(edge.toNode);
 				if (childNode) {
 					nodesToSelect.add(childNode);
+					console.log(`Canvas Auto Child Selector: Added child node ${edge.toNode}`);
+				} else {
+					console.log(`Canvas Auto Child Selector: WARNING - Could not find child node ${edge.toNode}`);
 				}
 			}
 		}
+
+		console.log(`Canvas Auto Child Selector: findDirectChildren complete - found ${nodesToSelect.size} children`);
 	}
 
 	findParentNodes(

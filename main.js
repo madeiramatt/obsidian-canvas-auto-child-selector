@@ -241,15 +241,33 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
     }
   }
   findDirectChildren(parentId, canvas, nodesToSelect, edgesToSelect) {
+    console.log(`Canvas Auto Child Selector: findDirectChildren called for parent: ${parentId}`);
+    console.log(`Canvas Auto Child Selector: Total edges to search: ${canvas.edges.size}`);
+    let edgeCount = 0;
     for (const edge of canvas.edges.values()) {
+      if (edgeCount < 3) {
+        console.log(`Canvas Auto Child Selector: Sample edge structure:`, {
+          id: edge.id,
+          fromNode: edge.fromNode,
+          toNode: edge.toNode,
+          fromNodeType: typeof edge.fromNode,
+          toNodeType: typeof edge.toNode
+        });
+      }
+      edgeCount++;
       if (edge.fromNode === parentId) {
+        console.log(`Canvas Auto Child Selector: Found matching edge from ${parentId} to ${edge.toNode}`);
         edgesToSelect.add(edge);
         const childNode = canvas.nodes.get(edge.toNode);
         if (childNode) {
           nodesToSelect.add(childNode);
+          console.log(`Canvas Auto Child Selector: Added child node ${edge.toNode}`);
+        } else {
+          console.log(`Canvas Auto Child Selector: WARNING - Could not find child node ${edge.toNode}`);
         }
       }
     }
+    console.log(`Canvas Auto Child Selector: findDirectChildren complete - found ${nodesToSelect.size} children`);
   }
   findParentNodes(childId, canvas, nodesToSelect, edgesToSelect) {
     for (const edge of canvas.edges.values()) {
