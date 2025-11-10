@@ -165,7 +165,13 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
       canvas.selection.clear();
       itemsToSelect.forEach((item) => {
         canvas.selection.add(item);
+        if (item.setSelected) {
+          item.setSelected(true);
+        }
       });
+      if (canvasView.requestSave) {
+        canvasView.requestSave();
+      }
       canvas.requestFrame();
       console.log("Canvas Auto Child Selector: Selection successful");
     } else {
@@ -205,7 +211,13 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
       canvas.selection.clear();
       itemsToSelect.forEach((item) => {
         canvas.selection.add(item);
+        if (item.setSelected) {
+          item.setSelected(true);
+        }
       });
+      if (canvasView.requestSave) {
+        canvasView.requestSave();
+      }
       canvas.requestFrame();
       console.log("Canvas Auto Child Selector: Selection successful");
     } else {

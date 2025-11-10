@@ -197,11 +197,23 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 		console.log(`Canvas Auto Child Selector: About to select ${nodesArray.length} nodes${this.settings.selectEdges ? ` and ${edgesArray.length} edges` : ''}`);
 
 		if (itemsToSelect.length > 0) {
-			// Use the selection API directly instead of selectOnly
+			// Clear current selection and update visual state
 			canvas.selection.clear();
+
+			// Add items to selection and update their visual state
 			itemsToSelect.forEach(item => {
 				canvas.selection.add(item);
+				// Update the visual selection state for each item
+				if (item.setSelected) {
+					item.setSelected(true);
+				}
 			});
+
+			// Mark the view as dirty to force a complete redraw
+			if ((canvasView as any).requestSave) {
+				(canvasView as any).requestSave();
+			}
+
 			canvas.requestFrame(); // Trigger UI update
 			console.log('Canvas Auto Child Selector: Selection successful');
 		} else {
@@ -258,11 +270,23 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 		console.log(`Canvas Auto Child Selector: About to select ${nodesArray.length} nodes${this.settings.selectEdges ? ` and ${edgesArray.length} edges` : ''}`);
 
 		if (itemsToSelect.length > 0) {
-			// Use the selection API directly instead of selectOnly
+			// Clear current selection and update visual state
 			canvas.selection.clear();
+
+			// Add items to selection and update their visual state
 			itemsToSelect.forEach(item => {
 				canvas.selection.add(item);
+				// Update the visual selection state for each item
+				if (item.setSelected) {
+					item.setSelected(true);
+				}
 			});
+
+			// Mark the view as dirty to force a complete redraw
+			if ((canvasView as any).requestSave) {
+				(canvasView as any).requestSave();
+			}
+
 			canvas.requestFrame(); // Trigger UI update
 			console.log('Canvas Auto Child Selector: Selection successful');
 		} else {
