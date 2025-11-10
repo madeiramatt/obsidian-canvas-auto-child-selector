@@ -236,10 +236,19 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 			if (node) nodesToSelect.push(node);
 		}
 
-		// Only select nodes - canvas.selectOnly() doesn't support edges
-		// Edges will be visually highlighted when their connected nodes are selected
-		canvas.selectOnly(nodesToSelect);
-		console.log(`Canvas Auto Child Selector: Selected ${nodesToSelect.length} nodes`);
+		if (this.settings.selectEdges) {
+			for (const edgeId of edgeIds) {
+				const edge = canvas.edges.get(edgeId);
+				if (edge) edgesToSelect.push(edge);
+			}
+		}
+
+		const itemsToSelect = this.settings.selectEdges
+			? [...nodesToSelect, ...edgesToSelect]
+			: nodesToSelect;
+
+		canvas.selectOnly(itemsToSelect);
+		console.log(`Canvas Auto Child Selector: Selected ${nodesToSelect.length} nodes${this.settings.selectEdges ? ` and ${edgesToSelect.length} edges` : ''}`);
 	}
 
 	handleAltClick(canvasView: CanvasView) {
@@ -361,8 +370,8 @@ class CanvasAutoChildSelectorSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('Track connecting edges (informational)')
-			.setDesc('Note: Canvas API does not support selecting edges. This setting is kept for compatibility but edges are automatically highlighted when nodes are selected.')
+			.setName('Select connecting edges')
+			.setDesc('Include edges/arrows in the selection along with nodes')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.selectEdges)
 				.onChange(async (value) => {

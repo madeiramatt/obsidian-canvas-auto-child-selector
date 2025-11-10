@@ -11,7 +11,7 @@ An Obsidian plugin that allows you to select a parent node and all its children 
   - Select parent nodes
 - **Configurable Settings**: Customize behavior through plugin settings
 - **Multi-Node Support**: Select multiple nodes and apply operations to all of them
-- **Visual Edge Highlighting**: Edges are automatically highlighted when connected nodes are selected
+- **Edge Selection**: Optionally include arrow connections in the selection
 - **Performance Safety**: Maximum recursion depth limit prevents infinite loops
 
 ## Usage
@@ -42,6 +42,25 @@ Access settings via Settings → Community Plugins → Canvas Auto Child Selecto
 - **Keep original selection** - Keep the initially selected node(s) in the final selection
 - **Maximum recursion depth** - Safety limit for traversing deep hierarchies (default: 100)
 
+### Command Palette
+
+1. Select one or more nodes in Canvas
+2. Open the command palette (`Ctrl/Cmd + P`)
+3. Run one of these commands:
+   - **Select child nodes (direct children only)** - Selects only immediate children
+   - **Select child nodes (all descendants)** - Selects all descendants recursively
+   - **Select parent nodes** - Selects all nodes with edges pointing to the selected node(s)
+
+## Settings
+
+Access settings via Settings → Community Plugins → Canvas Auto Child Selector
+
+- **Enable Alt-click shortcut** - Toggle the Alt-click behavior on/off
+- **Default to recursive selection** - When using Alt-click, select all descendants or just direct children
+- **Select connecting edges** - Include edges/arrows in the selection along with nodes
+- **Keep original selection** - Keep the initially selected node(s) in the final selection
+- **Maximum recursion depth** - Safety limit for traversing deep hierarchies (default: 100)
+
 ## Installation
 
 ### Manual Installation
@@ -67,13 +86,13 @@ The plugin provides two ways to select related nodes:
 1. Intercepts click events when Alt key is pressed
 2. Identifies the clicked node after Canvas processes the click
 3. Traverses edges based on your settings (recursive or direct)
-4. Selects all found nodes (edges are automatically highlighted by Obsidian)
+4. Selects all found nodes and optionally their connecting edges
 
 **Command Palette:**
 1. Works with your current Canvas selection
 2. Supports multiple selected nodes at once
 3. Traverses edges in the specified direction (children or parents)
-4. Respects all plugin settings including recursion limits
+4. Respects all plugin settings for edge inclusion and recursion limits
 
 ## Requirements
 
