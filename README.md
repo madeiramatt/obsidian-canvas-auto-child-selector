@@ -4,7 +4,7 @@ An Obsidian plugin that allows you to select a parent node and all its children 
 
 ## Features
 
-- **Modifier Click Selection**: Hold Ctrl (Windows/Linux) or Cmd (Mac) while clicking a node to select it along with all descendants
+- **Modifier Click Selection**: Hold Alt while clicking a node to select it along with all descendants
 - **Recursive Selection**: Automatically selects all children, grandchildren, and deeper descendants
 - **Edge Selection**: Includes all arrow connections from parent to child in the selection
 - **Replace Selection**: Replaces the current selection with the parent and all its descendants
@@ -12,7 +12,7 @@ An Obsidian plugin that allows you to select a parent node and all its children 
 ## Usage
 
 1. Open a Canvas in Obsidian
-2. Hold `Ctrl` (Windows/Linux) or `Cmd` (Mac)
+2. Hold `Alt`
 3. Click on any node that has children (nodes with arrows pointing to other nodes)
 4. The parent node, all descendants, and connecting edges will be selected
 
