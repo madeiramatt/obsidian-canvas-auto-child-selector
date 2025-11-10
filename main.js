@@ -174,13 +174,13 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
     const nodesToSelect = [];
     const edgesToSelect = [];
     for (const nodeId of nodeIds) {
-      const node = canvas.nodes.get(nodeId);
+      const node = canvas.getNode(nodeId);
       if (node)
         nodesToSelect.push(node);
     }
     if (this.settings.selectEdges) {
       for (const edgeId of edgeIds) {
-        const edge = canvas.edges.get(edgeId);
+        const edge = canvas.getEdge(edgeId);
         if (edge)
           edgesToSelect.push(edge);
       }
