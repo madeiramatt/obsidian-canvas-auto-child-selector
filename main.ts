@@ -4,7 +4,8 @@ interface Canvas {
 	nodes: Map<string, any>;
 	edges: Map<string, any>;
 	selection: Set<any>;
-	selectOnly: (items: any[]) => void;
+	deselectAll: () => void;
+	requestFrame: () => void;
 }
 
 interface CanvasView {
@@ -196,7 +197,12 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 		console.log(`Canvas Auto Child Selector: About to select ${nodesArray.length} nodes${this.settings.selectEdges ? ` and ${edgesArray.length} edges` : ''}`);
 
 		if (itemsToSelect.length > 0) {
-			canvas.selectOnly(itemsToSelect);
+			// Use the selection API directly instead of selectOnly
+			canvas.selection.clear();
+			itemsToSelect.forEach(item => {
+				canvas.selection.add(item);
+			});
+			canvas.requestFrame(); // Trigger UI update
 			console.log('Canvas Auto Child Selector: Selection successful');
 		} else {
 			console.log('Canvas Auto Child Selector: No valid items to select after filtering');
@@ -252,7 +258,12 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 		console.log(`Canvas Auto Child Selector: About to select ${nodesArray.length} nodes${this.settings.selectEdges ? ` and ${edgesArray.length} edges` : ''}`);
 
 		if (itemsToSelect.length > 0) {
-			canvas.selectOnly(itemsToSelect);
+			// Use the selection API directly instead of selectOnly
+			canvas.selection.clear();
+			itemsToSelect.forEach(item => {
+				canvas.selection.add(item);
+			});
+			canvas.requestFrame(); // Trigger UI update
 			console.log('Canvas Auto Child Selector: Selection successful');
 		} else {
 			console.log('Canvas Auto Child Selector: No valid items to select after filtering');

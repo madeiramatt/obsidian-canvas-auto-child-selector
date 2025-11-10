@@ -162,7 +162,11 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
     const itemsToSelect = this.settings.selectEdges ? [...nodesArray, ...edgesArray] : nodesArray;
     console.log(`Canvas Auto Child Selector: About to select ${nodesArray.length} nodes${this.settings.selectEdges ? ` and ${edgesArray.length} edges` : ""}`);
     if (itemsToSelect.length > 0) {
-      canvas.selectOnly(itemsToSelect);
+      canvas.selection.clear();
+      itemsToSelect.forEach((item) => {
+        canvas.selection.add(item);
+      });
+      canvas.requestFrame();
       console.log("Canvas Auto Child Selector: Selection successful");
     } else {
       console.log("Canvas Auto Child Selector: No valid items to select after filtering");
@@ -198,7 +202,11 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
     const itemsToSelect = this.settings.selectEdges ? [...nodesArray, ...edgesArray] : nodesArray;
     console.log(`Canvas Auto Child Selector: About to select ${nodesArray.length} nodes${this.settings.selectEdges ? ` and ${edgesArray.length} edges` : ""}`);
     if (itemsToSelect.length > 0) {
-      canvas.selectOnly(itemsToSelect);
+      canvas.selection.clear();
+      itemsToSelect.forEach((item) => {
+        canvas.selection.add(item);
+      });
+      canvas.requestFrame();
       console.log("Canvas Auto Child Selector: Selection successful");
     } else {
       console.log("Canvas Auto Child Selector: No valid items to select after filtering");
