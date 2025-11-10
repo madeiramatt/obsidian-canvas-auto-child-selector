@@ -291,24 +291,28 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 		// Find all edges going FROM this parent
 		let edgesFound = 0;
 		for (const edge of canvas.edges.values()) {
-			if (edge.fromNode === parentId) {
+			// Edge properties are 'from' and 'to', which are objects with 'id' property
+			if (edge.from?.id === parentId) {
 				edgesFound++;
-				console.log(`Canvas Auto Child Selector: Found child edge from ${parentId} to ${edge.toNode}`);
+				console.log(`Canvas Auto Child Selector: Found child edge from ${parentId} to ${edge.to?.id}`);
 
 				// Add this edge object
 				edgesToSelect.add(edge);
 
 				// Get the child node object
-				const childNode = canvas.nodes.get(edge.toNode);
-				if (childNode && !nodesToSelect.has(childNode)) {
-					// Add the child node object
-					nodesToSelect.add(childNode);
-					console.log(`Canvas Auto Child Selector: Added child node ${edge.toNode}`);
+				const childNodeId = edge.to?.id;
+				if (childNodeId) {
+					const childNode = canvas.nodes.get(childNodeId);
+					if (childNode && !nodesToSelect.has(childNode)) {
+						// Add the child node object
+						nodesToSelect.add(childNode);
+						console.log(`Canvas Auto Child Selector: Added child node ${childNodeId}`);
 
-					// Recursively find this child's children
-					this.findAllChildren(edge.toNode, canvas, nodesToSelect, edgesToSelect, depth + 1);
-				} else if (!childNode) {
-					console.log(`Canvas Auto Child Selector: WARNING - Edge points to non-existent node ${edge.toNode}`);
+						// Recursively find this child's children
+						this.findAllChildren(childNodeId, canvas, nodesToSelect, edgesToSelect, depth + 1);
+					} else if (!childNode) {
+						console.log(`Canvas Auto Child Selector: WARNING - Edge points to non-existent node ${childNodeId}`);
+					}
 				}
 			}
 		}
@@ -327,36 +331,25 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 		console.log(`Canvas Auto Child Selector: findDirectChildren called for parent: ${parentId}`);
 		console.log(`Canvas Auto Child Selector: Total edges to search: ${canvas.edges.size}`);
 
-		// Log first few edges to see structure
-		let edgeCount = 0;
+		// Find all edges going FROM this parent (only direct children)
 		for (const edge of canvas.edges.values()) {
-			if (edgeCount < 3) {
-				console.log(`Canvas Auto Child Selector: Full edge object:`, edge);
-				console.log(`Canvas Auto Child Selector: Edge keys:`, Object.keys(edge));
-				console.log(`Canvas Auto Child Selector: Sample edge structure:`, {
-					id: edge.id,
-					fromNode: edge.fromNode,
-					toNode: edge.toNode,
-					from: edge.from,
-					to: edge.to,
-					fromNodeType: typeof edge.fromNode,
-					toNodeType: typeof edge.toNode
-				});
-			}
-			edgeCount++;
+			// Edge properties are 'from' and 'to', which are objects with 'id' property
+			if (edge.from?.id === parentId) {
+				console.log(`Canvas Auto Child Selector: Found matching edge from ${parentId} to ${edge.to?.id}`);
 
-			if (edge.fromNode === parentId) {
-				console.log(`Canvas Auto Child Selector: Found matching edge from ${parentId} to ${edge.toNode}`);
 				// Add this edge object
 				edgesToSelect.add(edge);
 
 				// Get and add the child node object
-				const childNode = canvas.nodes.get(edge.toNode);
-				if (childNode) {
-					nodesToSelect.add(childNode);
-					console.log(`Canvas Auto Child Selector: Added child node ${edge.toNode}`);
-				} else {
-					console.log(`Canvas Auto Child Selector: WARNING - Could not find child node ${edge.toNode}`);
+				const childNodeId = edge.to?.id;
+				if (childNodeId) {
+					const childNode = canvas.nodes.get(childNodeId);
+					if (childNode) {
+						nodesToSelect.add(childNode);
+						console.log(`Canvas Auto Child Selector: Added child node ${childNodeId}`);
+					} else {
+						console.log(`Canvas Auto Child Selector: WARNING - Could not find child node ${childNodeId}`);
+					}
 				}
 			}
 		}
@@ -372,14 +365,18 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 	) {
 		// Find all edges going TO this child (parents)
 		for (const edge of canvas.edges.values()) {
-			if (edge.toNode === childId) {
+			// Edge properties are 'from' and 'to', which are objects with 'id' property
+			if (edge.to?.id === childId) {
 				// Add this edge object
 				edgesToSelect.add(edge);
 
 				// Get and add the parent node object
-				const parentNode = canvas.nodes.get(edge.fromNode);
-				if (parentNode) {
-					nodesToSelect.add(parentNode);
+				const parentNodeId = edge.from?.id;
+				if (parentNodeId) {
+					const parentNode = canvas.nodes.get(parentNodeId);
+					if (parentNode) {
+						nodesToSelect.add(parentNode);
+					}
 				}
 			}
 		}
