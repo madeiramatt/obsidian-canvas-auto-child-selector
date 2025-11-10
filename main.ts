@@ -29,23 +29,34 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 	async onload() {
 		console.log('Canvas Auto Child Selector: Plugin loaded');
 
-		// Listen for mousedown events (fires before click)
-		this.registerDomEvent(document, 'mousedown', (evt: MouseEvent) => {
+		// Listen for click events (after the canvas processes it)
+		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
+			console.log('Canvas Auto Child Selector: Click detected', {
+				altKey: evt.altKey,
+				button: evt.button,
+				target: (evt.target as HTMLElement)?.className
+			});
+
 			// Only trigger on Alt + Left Click
 			if (!evt.altKey || evt.button !== 0) {
 				return;
 			}
 
+			console.log('Canvas Auto Child Selector: Alt+click confirmed');
+
 			// Get the active canvas view
 			const canvasView = this.getCanvasView();
+			console.log('Canvas Auto Child Selector: Canvas view found:', !!canvasView);
+
 			if (!canvasView) {
 				return;
 			}
 
 			// Small delay to let canvas process the click and select the node
 			setTimeout(() => {
+				console.log('Canvas Auto Child Selector: Checking selection after delay');
 				this.handleAltClick(canvasView);
-			}, 10);
+			}, 50);
 		});
 	}
 
@@ -64,8 +75,19 @@ export default class CanvasAutoChildSelectorPlugin extends Plugin {
 		const canvas = canvasView.canvas;
 		const selection = canvas.selection;
 
+		console.log('Canvas Auto Child Selector: Selection size:', selection.size);
+		console.log('Canvas Auto Child Selector: Total nodes in canvas:', canvas.nodes.size);
+		console.log('Canvas Auto Child Selector: Total edges in canvas:', canvas.edges.size);
+
 		// Find the selected node
 		let selectedNode: any = null;
+		const selectionArray = Array.from(selection);
+		console.log('Canvas Auto Child Selector: Items in selection:', selectionArray.map((item: any) => ({
+			id: item.id,
+			type: item.constructor?.name,
+			isInNodes: canvas.nodes.has(item.id)
+		})));
+
 		for (const item of selection) {
 			// Check if this is a node (not an edge)
 			if (item.id && canvas.nodes.has(item.id)) {

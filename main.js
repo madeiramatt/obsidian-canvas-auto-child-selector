@@ -31,17 +31,26 @@ var import_obsidian = require("obsidian");
 var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
   async onload() {
     console.log("Canvas Auto Child Selector: Plugin loaded");
-    this.registerDomEvent(document, "mousedown", (evt) => {
+    this.registerDomEvent(document, "click", (evt) => {
+      var _a;
+      console.log("Canvas Auto Child Selector: Click detected", {
+        altKey: evt.altKey,
+        button: evt.button,
+        target: (_a = evt.target) == null ? void 0 : _a.className
+      });
       if (!evt.altKey || evt.button !== 0) {
         return;
       }
+      console.log("Canvas Auto Child Selector: Alt+click confirmed");
       const canvasView = this.getCanvasView();
+      console.log("Canvas Auto Child Selector: Canvas view found:", !!canvasView);
       if (!canvasView) {
         return;
       }
       setTimeout(() => {
+        console.log("Canvas Auto Child Selector: Checking selection after delay");
         this.handleAltClick(canvasView);
-      }, 10);
+      }, 50);
     });
   }
   getCanvasView() {
@@ -58,7 +67,19 @@ var CanvasAutoChildSelectorPlugin = class extends import_obsidian.Plugin {
   handleAltClick(canvasView) {
     const canvas = canvasView.canvas;
     const selection = canvas.selection;
+    console.log("Canvas Auto Child Selector: Selection size:", selection.size);
+    console.log("Canvas Auto Child Selector: Total nodes in canvas:", canvas.nodes.size);
+    console.log("Canvas Auto Child Selector: Total edges in canvas:", canvas.edges.size);
     let selectedNode = null;
+    const selectionArray = Array.from(selection);
+    console.log("Canvas Auto Child Selector: Items in selection:", selectionArray.map((item) => {
+      var _a;
+      return {
+        id: item.id,
+        type: (_a = item.constructor) == null ? void 0 : _a.name,
+        isInNodes: canvas.nodes.has(item.id)
+      };
+    }));
     for (const item of selection) {
       if (item.id && canvas.nodes.has(item.id)) {
         selectedNode = item;
